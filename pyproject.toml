@@ -1,0 +1,13 @@
+[project]
+name = "raw2event-fx"
+version = "0.1.0"
+description = "Raw Bayer to event-camera streams with a bit-accurate fixed-point C++ event generator"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.setuptools]
+packages = ["raw2event"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]

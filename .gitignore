@@ -1,0 +1,19 @@
+.venv/
+.cache/
+data/
+build/
+results/raw/
+__pycache__/
+*.bin
+.pytest_cache/
+
+# internal notes (not published)
+PROMPT.md
+P1_raw2event_fx_prompt.md
+code_changes.md
+results/m7_notes.md
+
+# editor / tool settings and run logs
+.claude/
+.vscode/
+results/*.log
