@@ -238,7 +238,22 @@ The **[Raw2Event dataset](https://huggingface.co/datasets/raw2event/raw2event)**
 bash scripts/reproduce_all.sh                    # venv + C++ build + tests + M1–M4 + dashboard  (~2 min)
 RUN_MNIST=1 bash scripts/reproduce_all.sh        # + M5 (downloads MNIST; uses CUDA if available)
 RUN_CED=1 RUN_RAW2EVENT=1 bash scripts/reproduce_all.sh   # + M6 (1.05 GB) and M7 (2.14 GB), downloaded if missing
+RUN_ALL=1 bash scripts/reproduce_all.sh          # everything: M1–M7 + dashboard, from a fresh clone
 ```
+
+**From a fresh clone, one command reruns everything.** Only the code and the result CSVs/figures are in the repo; the script fetches the rest on first run and skips anything already present:
+
+| What | Where it comes from | Lands in | Size |
+|---|---|---|---|
+| Python deps (NumPy, PyTorch CUDA 12.8 wheels, PyAV, aedat, CMake, Ninja, …) | PyPI + download.pytorch.org via `requirements.txt` | `.venv/` (project-local) | mostly PyTorch |
+| Synthetic scenes (M1–M4) | generated locally, nothing downloaded | `data/*.bin` | ~680 MB |
+| MNIST (M5) | torchvision auto-download | `data/mnist/` | small |
+| CED calibration bags (M6) | [rpg.ifi.uzh.ch/CED](https://rpg.ifi.uzh.ch/CED.html) | `data/ced/` | 1.05 GB |
+| Raw2Event recordings (M7), the 20 listed in `results/m7_prefixes.txt` | [huggingface.co/datasets/raw2event](https://huggingface.co/datasets/raw2event/raw2event) | `data/raw2event/` | 2.14 GB |
+
+No pretrained models are needed; the M5 classifier is trained from scratch in the run. Downloads use `curl` with retries, fail loudly on HTTP errors and never leave a half-written file, so an interrupted run can just be restarted. Rerunning overwrites `results/`.
+
+**Prerequisites:** Python 3.11+, `bash` and `curl` (Git Bash on Windows), and a C++17 compiler: GCC/Clang on Linux, or any Visual Studio 2019+ / Build Tools with the C++ workload on Windows (found automatically). An NVIDIA GPU is optional; M5 falls back to CPU.
 
 <details><summary><b>Run individual pieces</b></summary>
 

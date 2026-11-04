@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # Reproduce from a clean clone: venv -> build -> tests -> synthetic experiments (M1-M4).
-# Optional: RUN_MNIST=1 (M5), RUN_CED=1 (M6, real events), RUN_RAW2EVENT=1 (M7, real events).
+# Optional: RUN_MNIST=1 (M5), RUN_CED=1 (M6, real events), RUN_RAW2EVENT=1 (M7, real events), RUN_ALL=1 (all three).
+# All data (MNIST, CED, Raw2Event) downloads into data/ on first use; the venv installs on first run.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export HF_HOME=./.cache/huggingface TORCH_HOME=./.cache/torch XDG_CACHE_HOME=./.cache MPLCONFIGDIR=./.cache/mpl
 export PIP_REQUIRE_VIRTUALENV=1
+if [ "${RUN_ALL:-0}" = 1 ]; then RUN_MNIST=1 RUN_CED=1 RUN_RAW2EVENT=1; fi
+
+# fetch URL DEST: skip if present; fail on HTTP errors; never leave a half-written file
+fetch() { [ -f "$2" ] || { curl -fL --retry 3 -o "$2.part" "$1" && mv "$2.part" "$2"; }; }
 
 if [ ! -d .venv ]; then
   if command -v py >/dev/null 2>&1; then py -3 -m venv .venv; else python3 -m venv .venv; fi
@@ -34,9 +39,9 @@ if [ "${RUN_MNIST:-0}" = 1 ]; then "$PY" -m experiments.mnist_task; fi
 
 # M6: real Color-DAVIS346 events (CED calibration bags, 1.05 GB download)
 if [ "${RUN_CED:-0}" = 1 ]; then
-  if [ ! -f data/ced/calib_low.bag ]; then
+  if [ ! -f data/ced/calib_fluorescent_density_infrared.bag ]; then
     mkdir -p data/ced
-    curl -L -o data/ced/CED_calibration.zip https://rpg.ifi.uzh.ch/datasets/CED/CED_calibration.zip
+    fetch https://rpg.ifi.uzh.ch/datasets/CED/CED_calibration.zip data/ced/CED_calibration.zip
     "$PY" -c "import zipfile; zipfile.ZipFile('data/ced/CED_calibration.zip').extractall('data/ced')"
   fi
   "$PY" -m experiments.real_ced
@@ -48,9 +53,9 @@ if [ "${RUN_RAW2EVENT:-0}" = 1 ]; then
   mkdir -p data/raw2event
   while read -r P; do
     for f in frames_raw/$P.mkv events_aedat4/$P.aedat4 meta_raw/$P.dat; do
-      [ -f "data/raw2event/$(basename "$f")" ] || curl -sL -o "data/raw2event/$(basename "$f")" "$B/$f"
+      fetch "$B/$f" "data/raw2event/$(basename "$f")"
     done
-  done < results/m7_prefixes.txt
+  done < <(tr -d '\r' < results/m7_prefixes.txt)
   "$PY" -m experiments.real_raw2event results/m7_prefixes.txt
 fi
 
