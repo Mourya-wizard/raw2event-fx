@@ -241,6 +241,8 @@ RUN_CED=1 RUN_RAW2EVENT=1 bash scripts/reproduce_all.sh   # + M6 (1.05 GB) and M
 RUN_ALL=1 bash scripts/reproduce_all.sh          # everything: M1–M7 + dashboard, from a fresh clone
 ```
 
+Step-by-step guide: [RERUN.md](RERUN.md).
+
 **From a fresh clone, one command reruns everything.** Only the code and the result CSVs/figures are in the repo; the script fetches the rest on first run and skips anything already present:
 
 | What | Where it comes from | Lands in | Size |
