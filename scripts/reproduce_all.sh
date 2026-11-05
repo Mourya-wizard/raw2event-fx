@@ -13,12 +13,14 @@ fetch() { [ -f "$2" ] || { curl -fL --retry 3 -o "$2.part" "$1" && mv "$2.part" 
 
 if [ ! -d .venv ]; then
   if command -v py >/dev/null 2>&1; then py -3 -m venv .venv; else python3 -m venv .venv; fi
-  NEW_VENV=1
 fi
 if [ -x .venv/Scripts/python.exe ]; then PY=.venv/Scripts/python.exe; BIN=.venv/Scripts; else PY=.venv/bin/python; BIN=.venv/bin; fi
-if [ "${NEW_VENV:-0}" = 1 ]; then
+"$PY" -c "import sys; sys.exit(0 if sys.version_info >= (3, 11) else 'Python 3.11+ required, .venv has ' + sys.version.split()[0] + ': delete .venv and install a newer Python')"
+# marker is written only after a complete install, so an interrupted install resumes on the next run
+if [ ! -f .venv/.deps_installed ]; then
   "$PY" -m pip install --upgrade pip
   "$PY" -m pip install -r requirements.txt
+  touch .venv/.deps_installed
 fi
 
 # Build (Windows: MSVC loaded per-process by build_msvc.bat; elsewhere: g++/clang via venv cmake)
@@ -39,10 +41,11 @@ if [ "${RUN_MNIST:-0}" = 1 ]; then "$PY" -m experiments.mnist_task; fi
 
 # M6: real Color-DAVIS346 events (CED calibration bags, 1.05 GB download)
 if [ "${RUN_CED:-0}" = 1 ]; then
-  if [ ! -f data/ced/calib_fluorescent_density_infrared.bag ]; then
+  if [ ! -f data/ced/.extracted ]; then          # marker: written only after a complete unzip
     mkdir -p data/ced
     fetch https://rpg.ifi.uzh.ch/datasets/CED/CED_calibration.zip data/ced/CED_calibration.zip
     "$PY" -c "import zipfile; zipfile.ZipFile('data/ced/CED_calibration.zip').extractall('data/ced')"
+    touch data/ced/.extracted && rm data/ced/CED_calibration.zip   # zip not needed once extracted
   fi
   "$PY" -m experiments.real_ced
 fi
